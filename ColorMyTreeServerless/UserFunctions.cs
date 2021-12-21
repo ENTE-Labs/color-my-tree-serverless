@@ -30,11 +30,13 @@ namespace ColorMyTree
         private readonly CacheService _cache;
         private readonly DatabaseContext _database;
         private readonly DateTimeOffset _christmas = new DateTimeOffset(2021, 12, 25, 0, 0, 0, TimeSpan.FromHours(9));
+        private readonly ILogger<UserFunctions> _logger;
 
-        public UserFunctions(DatabaseContext database, CacheService cache)
+        public UserFunctions(DatabaseContext database, CacheService cache, ILogger<UserFunctions> logger)
         {
             _database = database;
             _cache = cache;
+            _logger = logger;
         }
 
         [FunctionName("UserProfile")]
@@ -49,19 +51,31 @@ namespace ColorMyTree
             if (String.IsNullOrWhiteSpace(userId))
                 return new NotFoundResult();
 
+            _logger.LogInformation($"Profile: start get profile from cache {userId}");
+
             var response = await _cache.GetOrCreateAsync($"Users/{userId}", async () => await GetUserAsync(userId, nowIsAfterChristmas), expiry: TimeSpan.FromHours(1));
+
+            _logger.LogInformation($"Profile: finish get profile from cache {userId}");
 
             if (response == null)
                 return new NotFoundResult();
 
             if (!response.IsAfterChristmas && nowIsAfterChristmas)
             {
+                _logger.LogInformation($"Profile: start get profile from DB {userId}");
+
                 response = await GetUserAsync(userId, nowIsAfterChristmas);
+
+                _logger.LogInformation($"Profile: finish get profile from DB {userId}");
 
                 if (response == null)
                     return new NotFoundResult();
 
+                _logger.LogInformation($"Profile: start set profile to cache {userId}");
+
                 await _cache.SetAsync($"Users/{userId}", response, expiry: TimeSpan.FromHours(1));
+
+                _logger.LogInformation($"Profile: finish set profile to cache {userId}");
             }
 
             return Ok(response);

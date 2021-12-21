@@ -30,11 +30,13 @@ namespace ColorMyTree
     {
         private readonly CacheService _cache;
         private readonly DatabaseContext _database;
+        private readonly ILogger<GiftFunctions> _logger;
 
-        public GiftFunctions(DatabaseContext database, CacheService cache)
+        public GiftFunctions(DatabaseContext database, CacheService cache, ILogger<GiftFunctions> logger)
         {
             _database = database;
             _cache = cache;
+            _logger = logger;
         }
 
         [FunctionName("Give")]
@@ -77,10 +79,19 @@ namespace ColorMyTree
                 IpAddress = req.HttpContext.Connection.RemoteIpAddress?.ToString() ?? ""
             };
 
+            _logger.LogInformation($"Gift: start saving gift to DB {userId}");
+
             _database.Gifts.Add(gift);
             await _database.SaveChangesAsync();
 
+            _logger.LogInformation($"Gift: finish saving gift to DB {userId}");
+
+
+            _logger.LogInformation($"Gift: start clearing profile cache {userId}");
+
             await _cache.DeleteAsync($"Users/{userId}");
+
+            _logger.LogInformation($"Gift: finish clearing profile cache {userId}");
 
             return Ok(null);
         }
