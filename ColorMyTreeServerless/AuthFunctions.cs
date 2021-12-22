@@ -73,7 +73,8 @@ namespace ColorMyTree
             return Ok(new AuthResponseModel
             {
                 NickName = user.NickName,
-                UserId = user.Id
+                UserId = user.Id,
+                Login = user.Login
             });
         }
 
@@ -141,7 +142,8 @@ namespace ColorMyTree
             return Ok(new AuthResponseModel
             {
                 NickName = user.NickName,
-                UserId = user.Id
+                UserId = user.Id,
+                Login = user.Login
             });
         }
 
